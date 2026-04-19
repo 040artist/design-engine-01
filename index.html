@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paul Raats — Design Engine</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #f0ede8;
+    --muted: #666;
+    --accent: #e8d5a3;
+    --accent2: #c4a46b;
+    --liked: #2a3a2a;
+    --liked-border: #4a7a4a;
+    --liked-text: #7ac87a;
+    --font-display: 'Trebuchet MS', 'Gill Sans', sans-serif;
+    --font-mono: 'Courier New', 'Lucida Console', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .logo {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  h1 span { color: var(--accent); }
+
+  .section { margin-bottom: 1.75rem; }
+  .label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag {
+    padding: 6px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--muted);
+    background: transparent;
+    transition: all 0.12s;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    user-select: none;
+  }
+  .tag:hover { border-color: var(--accent2); color: var(--accent); }
+  .tag.on { border-color: var(--accent); color: var(--accent); background: rgba(232,213,163,0.07); }
+
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 140px; }
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font-display);
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--accent2); }
+
+  .gen-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #0a0a0a;
+    border: none;
+    border-radius: 2px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-display);
+    transition: all 0.15s;
+    margin-bottom: 2rem;
+  }
+  .gen-btn:hover { background: #f0e0b0; }
+  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--accent); }
+
+  .evolve-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent2);
+    border-radius: 2px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-display);
+    transition: all 0.15s;
+    margin-top: 1rem;
+  }
+  .evolve-btn:hover { background: rgba(232,213,163,0.07); }
+  .evolve-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .results { margin-top: 0; }
+  .iter-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    margin: 1.5rem 0 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .iter-label:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+
+  .prompt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .prompt-card:hover { border-color: var(--border2); }
+  .prompt-card.liked {
+    background: var(--liked);
+    border-color: var(--liked-border);
+  }
+  .prompt-text {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.8;
+    color: #c8c4bc;
+    margin-bottom: 12px;
+    word-break: break-word;
+  }
+  .prompt-card.liked .prompt-text { color: #d0e8d0; }
+  .card-actions { display: flex; gap: 8px; }
+  .btn-sm {
+    padding: 5px 14px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-display);
+    transition: all 0.12s;
+  }
+  .btn-sm:hover { color: var(--text); border-color: #555; }
+  .btn-like.on { border-color: var(--liked-border); color: var(--liked-text); }
+  .status {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+  }
+  .dots::after {
+    content: '';
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%,20%  { content: ''; }
+    40%     { content: '.'; }
+    60%     { content: '..'; }
+    80%,100%{ content: '...'; }
+  }
+  .liked-count {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--liked-text);
+    margin-left: 10px;
+    letter-spacing: 0.05em;
+  }
+  .apikey-bar {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    padding: 12px 14px;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .apikey-bar input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font-mono);
+  }
+  .apikey-bar input:focus { outline: none; border-color: var(--accent2); }
+  .apikey-save {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--accent2);
+    border-radius: 2px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-display);
+    white-space: nowrap;
+  }
+  .apikey-save:hover { background: rgba(232,213,163,0.07); }
+  .apikey-status { font-size: 11px; font-family: var(--font-mono); color: var(--muted); width: 100%; }
+  .settings-snap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
+  .snap-row { display: flex; gap: 6px; align-items: baseline; width: 100%; flex-wrap: wrap; }
+  .snap-key { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+  .snap-val { font-size: 11px; font-family: var(--font-mono); color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Studio Paul Raats</div>
+  <h1>Design <span>Engine</span></h1>
+</header>
+
+<div class="apikey-bar">
+  <input type="password" id="apikey-input" placeholder="Jouw Anthropic API key (sk-ant-...)" />
+  <button class="apikey-save" onclick="saveKey()">Opslaan</button>
+  <div class="apikey-status" id="apikey-status"></div>
+</div>
+
+<div class="section">
+  <div class="label">Stijl</div>
+  <div class="tags" id="style-tags">
+    <div class="tag on" data-v="pop art">Pop art</div>
+    <div class="tag" data-v="abstract art">Abstract</div>
+    <div class="tag" data-v="portrait">Portret</div>
+    <div class="tag" data-v="geometric">Geometrisch</div>
+    <div class="tag" data-v="surrealism">Surrealisme</div>
+    <div class="tag" data-v="graphic design">Graphic design</div>
+    <div class="tag" data-v="expressionism">Expressionisme</div>
+    <div class="tag" data-v="glitch art">Glitch art</div>
+    <div class="tag" data-v="bauhaus">Bauhaus</div>
+    <div class="tag" data-v="street art">Street art</div>
+    <div class="tag" data-v="collage art">Collage</div>
+    <div class="tag" data-v="op art">Op art</div>
+    <div class="tag" data-v="nature organic botanical">Natuur</div>
+    <div class="tag" data-v="Ukiyo-e modern twist, japanese woodblock contemporary fusion">Ukiyo-e (Modern Twist)</div>
+    <div class="tag" data-v="risograph print, riso duotone texture, ink grain overlay">Risograph Print</div>
+    <div class="tag" data-v="Pre-Raphaelite realism, romantic detailed painterly, lush symbolic">Pre-Raphaelite Realism</div>
+    <div class="tag" data-v="vaporwave retro-futurism, 80s aesthetic, synthwave nostalgia, pastel neon grid">Vaporwave / Retro-Futurism</div>
+    <div class="tag" data-v="cyber-organic, biomechanical fusion, synthetic biology, techno-organic integration">Cyber-Organische Fusie</div>
+    <div class="tag" data-v="Giger-esque biomechanical, richly colored, refined detailed, alien organic architecture">Giger-esque (kleur & verfijnd)</div>
+    <div class="tag" data-v="tech inlays on woman's face, circuit board patterns overlaid on portrait, embedded technology graphic, flat graphic illustration, poster art">Portret met Tech-Inlays</div>
+    <div class="tag" data-v="solarpunk aesthetic, lush green technology, optimistic eco-futurism, botanical architecture">Solarpunk Esthetiek</div>
+    <div class="tag" data-v="hexagonal tile mosaic portrait deconstruction, geometric fragmentation">Hexagon Fragmentatie</div>
+    <div class="tag" data-v="tribal fusion portrait, african geometric patterns, bold color fields, graphic">Tribal Fusion</div>
+    <div class="tag" data-v="Delft blue porcelain pattern, hand-painted Dutch tile ornament, botanical floral overlay, cobalt blue on raw OSB wood grain, 17th century Dutch Golden Age meets contemporary mixed media, bees dragonflies botanical insects woven into design, layered transparency, windmill motifs, fine line illustration">Delfts Blauw Fusion</div>
+    <div class="tag" data-v="mirror mosaic portrait, reflective tile fragments, silver chrome shards">Spiegel Mozaïek</div>
+    <div class="tag" data-v="hard-edge graphic line art portrait, bold outlines, flat color fields, vector-like">Grafische Lijnkunst</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Sfeer & kleur</div>
+  <div class="tags" id="mood-tags">
+    <div class="tag on" data-v="bold vivid saturated colors">Bold & levendig</div>
+    <div class="tag" data-v="dark moody cinematic">Dark & moody</div>
+    <div class="tag" data-v="monochromatic black white">Monochroom</div>
+    <div class="tag" data-v="neon electric glowing">Neon</div>
+    <div class="tag" data-v="warm earth tones organic">Naturel</div>
+    <div class="tag" data-v="metallic gold silver luxury">Metallic luxe</div>
+    <div class="tag" data-v="pastel dreamy soft">Pastel</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="row">
+    <div class="col">
+      <div class="label">Complexiteit</div>
+      <select id="complexity">
+        <option value="simple bold iconic minimal">Eenvoudig & krachtig</option>
+        <option value="layered complex highly detailed" selected>Gelaagd & complex</option>
+        <option value="extremely intricate maximalist overwhelming detail">Maximalistisch chaos</option>
+      </select>
+    </div>
+    <div class="col">
+      <div class="label">Verhouding</div>
+      <select id="ratio">
+        <option value="--ar 1:1">Vierkant 1:1</option>
+        <option value="--ar 2:1">Liggend 2:1</option>
+        <option value="--ar 3:2">Liggend 3:2</option>
+        <option value="--ar 16:9">Liggend 16:9</option>
+        <option value="--ar 3:4" selected>Staand 3:4</option>
+        <option value="--ar 2:3">Portret 2:3</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<button class="gen-btn" id="gen-btn" onclick="generate()">Genereer 4 prompts</button>
+
+<div class="results" id="results"></div>
+
+<button class="evolve-btn" id="evolve-btn" onclick="evolve()" disabled>
+  Evolueer op basis van favorieten <span class="liked-count" id="liked-count"></span>
+</button>
+
+<script>
+let liked = [];
+let allPrompts = [];
+let iterCount = 0;
+
+function saveKey() {
+  const val = document.getElementById("apikey-input").value.trim();
+  if (!val.startsWith("sk-ant-")) {
+    document.getElementById("apikey-status").textContent = "Ongeldige key — moet beginnen met sk-ant-";
+    return;
+  }
+  localStorage.setItem("pr_apikey", val);
+  document.getElementById("apikey-status").textContent = "Key opgeslagen!";
+  document.getElementById("apikey-input").value = "sk-ant-••••••••••••••••";
+}
+
+function getKey() {
+  return localStorage.getItem("pr_apikey") || "";
+}
+
+window.addEventListener("load", () => {
+  const saved = localStorage.getItem("pr_apikey");
+  if (saved) {
+    document.getElementById("apikey-input").value = "sk-ant-••••••••••••••••";
+    document.getElementById("apikey-status").textContent = "API key geladen.";
+  }
+});
+
+document.querySelectorAll('.tag').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('on'));
+});
+
+function getVals(id) {
+  return [...document.querySelectorAll(`#${id} .tag.on`)].map(t => t.dataset.v);
+}
+
+async function callClaude(userMsg) {
+  const key = getKey();
+  if (!key) throw new Error("Geen API key ingevuld.");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1000,
+      system: `You are a Midjourney prompt specialist for Paul Raats, a high-end mixed-media visual artist from Eindhoven.
+
+THE GOLDEN RULE — BUILD PROMPTS ART-FIRST, PORTRAIT-SECOND:
+Structure every prompt like this: START with the artistic medium and style, THEN add the pattern/design/texture, THEN the woman's face as a graphic element layered on top. The face is a design element, not a photo subject.
+
+PROMPT STRUCTURE TO FOLLOW:
+[artistic medium] + [pattern/design/texture] + [woman's face as graphic overlay] + [color palette] + [technical art params]
+
+EXAMPLE STRUCTURE:
+"Andy Warhol silkscreen print, bold flat color fields, Delft blue tile pattern as background canvas, woman's face as graphic stencil overlay, hard-edge shapes, linocut texture, cobalt and gold, no gradients, 2D flat composition --v 7 --style raw --stylize 1000"
+
+ARTISTIC MEDIUMS TO REFERENCE (use these, not photography):
+silkscreen print, linocut, woodcut, stencil art, risograph print, screen print, gouache painting, acrylic on canvas, collage, mixed media illustration, poster art, mural art, comic art
+
+ARTISTIC REFERENCES (use names in prompts):
+Andy Warhol, Roy Lichtenstein, Basquiat, Gustav Klimt, Alphonse Mucha, Banksy, Shepard Fairey, Henri Matisse cutouts, Toulouse-Lautrec poster
+
+SUBJECT RULES:
+- Woman's face = a GRAPHIC DESIGN ELEMENT, like a stamp or stencil — not a photographic subject
+- ALWAYS: "woman's face as graphic element", "female portrait as flat stencil", "woman's face as screen print"
+- NEVER: "figure", "person", "realistic face", "beautiful woman"
+
+COLOR RULES:
+- FLAT and PRINTED — like ink on paper, not light on skin
+- Hard edges, no gradients, no soft blending
+- 2-3 bold colors maximum per prompt for graphic impact
+
+FORBIDDEN WORDS — NEVER USE:
+photorealistic, realistic, 3D, CGI, render, octane, DSLR, photography, hyperrealistic, glossy skin, subsurface scattering, volumetric, studio lighting, soft light
+
+ALWAYS END EVERY PROMPT WITH:
+--v 7 --style raw --stylize 1000
+
+Return ONLY a valid JSON array of 4 strings. No markdown, no backticks, no explanation. Just the raw JSON array.`,
+      messages: [{ role: "user", content: userMsg }]
+    })
+  });
+  const data = await res.json();
+  const raw = data.content.map(b => b.text || "").join("").replace(/```json|```/g, "").trim();
+  return JSON.parse(raw);
+}
+
+function buildMsg(extra = "") {
+  const styles = getVals("style-tags").join(", ") || "abstract";
+  const moods = getVals("mood-tags").join(", ") || "bold";
+  const complexity = document.getElementById("complexity").value;
+  const ratio = document.getElementById("ratio").value;
+  return `Create 4 unique Midjourney prompts with:
+Style: ${styles}
+Mood/color: ${moods}  
+Complexity: ${complexity}
+Aspect ratio: ${ratio}
+${extra}
+Make each prompt distinct. Be daring, specific, and reference real artistic movements and techniques.`;
+}
+
+function getSettings() {
+  const styles = getVals("style-tags");
+  const moods = getVals("mood-tags");
+  const complexEl = document.getElementById("complexity");
+  const ratioEl = document.getElementById("ratio");
+  const complexLabel = complexEl.options[complexEl.selectedIndex].text;
+  const ratioLabel = ratioEl.options[ratioEl.selectedIndex].text;
+  return { styles, moods, complexLabel, ratioLabel };
+}
+
+function renderSet(prompts, label, settings) {
+  const out = document.getElementById("results");
+  const block = document.createElement("div");
+  const lbl = document.createElement("div");
+  lbl.className = "iter-label";
+  lbl.textContent = label;
+  block.appendChild(lbl);
+
+  if (settings) {
+    const snap = document.createElement("div");
+    snap.className = "settings-snap";
+    snap.innerHTML = `
+      <div class="snap-row"><span class="snap-key">Stijl</span><span class="snap-val">${settings.styles.join(", ") || "—"}</span></div>
+      <div class="snap-row"><span class="snap-key">Sfeer</span><span class="snap-val">${settings.moods.join(", ") || "—"}</span></div>
+      <div class="snap-row"><span class="snap-key">Complexiteit</span><span class="snap-val">${settings.complexLabel}</span></div>
+      <div class="snap-row"><span class="snap-key">Verhouding</span><span class="snap-val">${settings.ratioLabel}</span></div>`;
+    block.appendChild(snap);
+  }
+  prompts.forEach((p, i) => {
+    const id = `pr_${Date.now()}_${i}`;
+    allPrompts.push({ id, text: p });
+    const card = document.createElement("div");
+    card.className = "prompt-card";
+    card.id = id;
+    card.innerHTML = `
+      <div class="prompt-text">${p}</div>
+      <div class="card-actions">
+        <button class="btn-sm btn-like" id="l_${id}" onclick="toggleLike('${id}')">Favoriet</button>
+        <button class="btn-sm" onclick="copyIt('${id}')">Kopieer</button>
+      </div>`;
+    block.appendChild(card);
+  });
+  out.appendChild(block);
+  updateEvolve();
+}
+
+function toggleLike(id) {
+  const card = document.getElementById(id);
+  const btn = document.getElementById(`l_${id}`);
+  const p = allPrompts.find(x => x.id === id);
+  if (!p) return;
+  if (liked.find(x => x.id === id)) {
+    liked = liked.filter(x => x.id !== id);
+    card.classList.remove("liked");
+    btn.classList.remove("on");
+    btn.textContent = "Favoriet";
+  } else {
+    liked.push(p);
+    card.classList.add("liked");
+    btn.classList.add("on");
+    btn.textContent = "Geliked";
+  }
+  updateEvolve();
+}
+
+function copyIt(id) {
+  const p = allPrompts.find(x => x.id === id);
+  if (!p) return;
+  navigator.clipboard.writeText(p.text);
+  const btn = document.querySelector(`#${id} .btn-sm:last-child`);
+  btn.textContent = "Gekopieerd!";
+  setTimeout(() => btn.textContent = "Kopieer", 1500);
+}
+
+function updateEvolve() {
+  const btn = document.getElementById("evolve-btn");
+  const cnt = document.getElementById("liked-count");
+  btn.disabled = liked.length === 0;
+  cnt.textContent = liked.length > 0 ? `(${liked.length})` : "";
+}
+
+async function generate() {
+  const btn = document.getElementById("gen-btn");
+  btn.disabled = true;
+  btn.textContent = "Genereren...";
+  iterCount++;
+  const out = document.getElementById("results");
+  if (iterCount === 1) out.innerHTML = "";
+  const status = document.createElement("div");
+  status.className = "status";
+  status.innerHTML = `<span class="dots">Claude genereert</span>`;
+  out.appendChild(status);
+  try {
+    const prompts = await callClaude(buildMsg());
+    status.remove();
+    renderSet(prompts, `Generatie ${iterCount}`, getSettings());
+  } catch(e) {
+    status.textContent = "Fout: " + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = "Genereer 4 nieuwe prompts";
+}
+
+async function evolve() {
+  const btn = document.getElementById("evolve-btn");
+  btn.disabled = true;
+  btn.textContent = "Evolueert...";
+  iterCount++;
+  const likedTexts = liked.map(l => l.text).join("\n---\n");
+  const extra = `\nThe artist loved these prompts. Evolve them further — push the concept deeper, more surprising, more original:\n${likedTexts}`;
+  const out = document.getElementById("results");
+  const status = document.createElement("div");
+  status.className = "status";
+  status.innerHTML = `<span class="dots">Evolueert op basis van ${liked.length} favoriet${liked.length > 1 ? "en" : ""}</span>`;
+  out.appendChild(status);
+  try {
+    const prompts = await callClaude(buildMsg(extra));
+    status.remove();
+    renderSet(prompts, `Evolutie ${iterCount} — gebaseerd op ${liked.length} favoriet${liked.length > 1 ? "en" : ""}`, getSettings());
+  } catch(e) {
+    status.textContent = "Fout: " + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = `Evolueer verder`;
+  updateEvolve();
+}
+</script>
+</body>
+</html>
