@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paul Raats — Design Engine</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #f0ede8;
+    --muted: #666;
+    --accent: #e8d5a3;
+    --accent2: #c4a46b;
+    --liked: #2a3a2a;
+    --liked-border: #4a7a4a;
+    --liked-text: #7ac87a;
+    --font-display: 'Trebuchet MS', 'Gill Sans', sans-serif;
+    --font-mono: 'Courier New', 'Lucida Console', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .logo {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  h1 span { color: var(--accent); }
+
+  .section { margin-bottom: 1.75rem; }
+  .label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tag {
+    padding: 6px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--muted);
+    background: transparent;
+    transition: all 0.12s;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    user-select: none;
+  }
+  .tag:hover { border-color: var(--accent2); color: var(--accent); }
+  .tag.on { border-color: var(--accent); color: var(--accent); background: rgba(232,213,163,0.07); }
+
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 140px; }
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font-display);
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--accent2); }
+
+  .gen-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #0a0a0a;
+    border: none;
+    border-radius: 2px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-display);
+    transition: all 0.15s;
+    margin-bottom: 2rem;
+  }
+  .gen-btn:hover { background: #f0e0b0; }
+  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--accent); }
+
+  .evolve-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent2);
+    border-radius: 2px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-display);
+    transition: all 0.15s;
+    margin-top: 1rem;
+  }
+  .evolve-btn:hover { background: rgba(232,213,163,0.07); }
+  .evolve-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .results { margin-top: 0; }
+  .iter-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    margin: 1.5rem 0 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .iter-label:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+
+  .prompt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .prompt-card:hover { border-color: var(--border2); }
+  .prompt-card.liked {
+    background: var(--liked);
+    border-color: var(--liked-border);
+  }
+  .prompt-text {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.8;
+    color: #c8c4bc;
+    margin-bottom: 12px;
+    word-break: break-word;
+  }
+  .prompt-card.liked .prompt-text { color: #d0e8d0; }
+  .card-actions { display: flex; gap: 8px; }
+  .btn-sm {
+    padding: 5px 14px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-display);
+    transition: all 0.12s;
+  }
+  .btn-sm:hover { color: var(--text); border-color: #555; }
+  .btn-like.on { border-color: var(--liked-border); color: var(--liked-text); }
+  .status {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+  }
+  .dots::after {
+    content: '';
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%,20%  { content: ''; }
+    40%     { content: '.'; }
+    60%     { content: '..'; }
+    80%,100%{ content: '...'; }
+  }
+  .liked-count {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--liked-text);
+    margin-left: 10px;
+    letter-spacing: 0.05em;
+  }
+  .apikey-bar {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    padding: 12px 14px;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .apikey-bar input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 2px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font-mono);
+  }
+  .apikey-bar input:focus { outline: none; border-color: var(--accent2); }
+  .apikey-save {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--accent2);
+    border-radius: 2px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--font-display);
+    white-space: nowrap;
+  }
+  .apikey-save:hover { background: rgba(232,213,163,0.07); }
+  .apikey-status { font-size: 11px; font-family: var(--font-mono); color: var(--muted); width: 100%; }
+  .settings-snap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
+  .snap-row { display: flex; gap: 6px; align-items: baseline; width: 100%; flex-wrap: wrap; }
+  .snap-key { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+  .snap-val { font-size: 11px; font-family: var(--font-mono); color: var(--accent2); }
+  .mode-btn {
+    padding: 6px 14px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-display);
+    letter-spacing: 0.05em;
+    transition: all 0.12s;
+  }
+  .mode-btn.active {
+    background: rgba(232,213,163,0.07);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .mode-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Studio Paul Raats</div>
+  <h1>Design <span>Engine</span></h1>
+</header>
+
+<div class="apikey-bar">
+  <input type="password" id="apikey-input" placeholder="Jouw Anthropic API key (sk-ant-...)" />
+  <button class="apikey-save" onclick="saveKey()">Opslaan</button>
+  <div class="apikey-status" id="apikey-status"></div>
+</div>
+
+<div class="section">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+    <div class="label" style="margin-bottom:0;">Stijl</div>
+    <div style="display:flex; gap:6px;">
+      <button class="mode-btn active" id="btn-face" onclick="setMode('face')">👤 Gezicht</button>
+      <button class="mode-btn" id="btn-noface" onclick="setMode('noface')">🎨 Geen gezicht</button>
+    </div>
+  </div>
+  <div class="tags" id="style-tags">
+    <div class="tag on" data-v="pop art" data-face="no">Pop art</div>
+    <div class="tag" data-v="Emma-9 style, powerful female portrait, warm gold burnt orange copper ochre color palette, woman staring directly forward with intense piercing eyes, ornamental headdress or crown element, dark moody industrial background that makes face glow, layered complex digital illustration, graphic painterly quality, bold color contrast warm face against dark background, tribal meets fine art aesthetic, human consciousness and emotion as central theme, flat graphic illustration not photographic, no hexagons no geometric grid no cyberpunk no neon no sci-fi technology" data-face="yes">Emma-9 Stijl</div>
+    <div class="tag" data-v="abstract art" data-face="no">Abstract</div>
+    <div class="tag" data-v="portrait" data-face="yes">Portret</div>
+    <div class="tag" data-v="geometric" data-face="no">Geometrisch</div>
+    <div class="tag" data-v="surrealism" data-face="no">Surrealisme</div>
+    <div class="tag" data-v="graphic design" data-face="no">Graphic design</div>
+    <div class="tag" data-v="expressionism" data-face="no">Expressionisme</div>
+    <div class="tag" data-v="glitch art" data-face="no">Glitch art</div>
+    <div class="tag" data-v="bauhaus" data-face="no">Bauhaus</div>
+    <div class="tag" data-v="street art" data-face="no">Street art</div>
+    <div class="tag" data-v="collage art" data-face="no">Collage</div>
+    <div class="tag" data-v="op art" data-face="no">Op art</div>
+    <div class="tag" data-v="nature organic botanical" data-face="no">Natuur</div>
+    <div class="tag" data-v="Ukiyo-e modern twist, japanese woodblock contemporary fusion" data-face="no">Ukiyo-e (Modern Twist)</div>
+    <div class="tag" data-v="risograph print, riso duotone texture, ink grain overlay" data-face="no">Risograph Print</div>
+    <div class="tag" data-v="Pre-Raphaelite realism, romantic detailed painterly, lush symbolic" data-face="yes">Pre-Raphaelite Realism</div>
+    <div class="tag" data-v="vaporwave retro-futurism, 80s aesthetic, synthwave nostalgia, pastel neon grid" data-face="no">Vaporwave / Retro-Futurism</div>
+    <div class="tag" data-v="cyber-organic, biomechanical fusion, synthetic biology, techno-organic integration" data-face="no">Cyber-Organische Fusie</div>
+    <div class="tag" data-v="Giger-esque biomechanical, richly colored, refined detailed, alien organic architecture" data-face="no">Giger-esque (kleur & verfijnd)</div>
+    <div class="tag" data-v="tech inlays on woman's face, circuit board patterns overlaid on portrait, embedded technology graphic, flat graphic illustration, poster art" data-face="yes">Portret met Tech-Inlays</div>
+    <div class="tag" data-v="solarpunk aesthetic, lush green technology, optimistic eco-futurism, botanical architecture" data-face="no">Solarpunk Esthetiek</div>
+    <div class="tag" data-v="hexagonal tile mosaic portrait deconstruction, geometric fragmentation" data-face="yes">Hexagon Fragmentatie</div>
+    <div class="tag" data-v="tribal fusion portrait, african geometric patterns, bold color fields, graphic" data-face="yes">Tribal Fusion</div>
+    <div class="tag" data-v="Delft blue pottery style, cobalt blue illustrations on glossy white tin-glazed ceramic background, PROMINENT Dutch windmill as central or major element in composition, intricate floral patterns with hand-painted brushstrokes, chinoiserie elements mixing Dutch windmills and tulips, Delft blue watercolor gradient from light to deep cobalt, glossy porcelain finish, fine hairline craquelé cracks for antique effect, 17th century Dutch Golden Age meets contemporary mixed media, botanical floral overlay, windmill motif must be clearly visible, fine line illustration, hand-painted details" data-face="no">Delfts Blauw Fusion</div>
+    <div class="tag" data-v="dragonflies bees butterflies and botanical insects woven into design as decorative graphic elements" data-face="no">Insecten & libelles</div>
+    <div class="tag" data-v="Dutch windmill as prominent graphic element, traditional Holland windmill illustration, windmill silhouette as bold design element, classic Dutch landscape icon" data-face="no">Hollandse Molen</div>
+    <div class="tag" data-v="mirror mosaic portrait, reflective tile fragments, silver chrome shards" data-face="yes">Spiegel Mozaïek</div>
+    <div class="tag" data-v="hard-edge graphic line art, bold outlines, flat color fields, vector-like" data-face="no">Grafische Lijnkunst</div>
+    <div class="tag" data-v="Andy Warhol silkscreen print style, bold flat color fields, high contrast repeated composition, pop art icon, limited color palette maximum impact, hard edge separation, printed ink aesthetic, graphic flatness, Warhol Factory aesthetic" data-face="yes">Andy Warhol Silkscreen</div>
+    <div class="tag" data-v="Matisse cutout collage technique, woman's face constructed entirely from hard-edged Persian carpet fragments, no skin visible at all, face built from flat geometric carpet tile pieces like a mosaic, Turkish rug pattern pieces as hard cutout shapes forming facial structure, crimson gold cobalt carpet fragments assembled into face silhouette, graphic collage poster art, bold flat composition, zero photography zero realism, face as pure pattern construction" data-face="yes">Perzisch Tapijt Huid</div>
+    <div class="tag" data-v="architectural abstract, geometric building structures as pure graphic composition, bold color blocks, Mondrian meets brutalism" data-face="no">Architecturaal Abstract</div>
+    <div class="tag" data-v="botanical explosion, maximalist floral pattern, tropical leaves and flowers as graphic artwork, no figures, pure botanical illustration" data-face="no">Botanisch Explosie</div>
+    <div class="tag" data-v="pure pattern composition, autonomous geometric ornament, Persian carpet pattern as standalone artwork, no subject no figure, pattern as the art" data-face="no">Pure Patroon Compositie</div>
+    <div class="tag" data-v="abstract landscape, horizon and terrain as bold flat color fields, desert dunes or ocean waves as graphic composition, no figures" data-face="no">Landschap Abstract</div>
+    <div class="tag" data-v="typographic symbolic art, letters symbols icons as visual language, bold graphic poster with symbolic imagery, no figures" data-face="no">Typografisch / Symbolisch</div>
+    <div class="tag" data-v="human form as pure abstraction, face and body reduced to flat graphic silhouette, human presence as color field and shape not as portrait, figure as geometric form, person dissolved into composition, human outline as design element, Matisse figurative abstraction, human shadow as graphic shape, presence without portraiture" data-face="no">Menselijke Abstractie</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Sfeer & kleur</div>
+  <div class="tags" id="mood-tags">
+    <div class="tag on" data-v="bold vivid saturated colors">Bold & levendig</div>
+    <div class="tag" data-v="dark moody cinematic">Dark & moody</div>
+    <div class="tag" data-v="monochromatic black white">Monochroom</div>
+    <div class="tag" data-v="neon electric glowing">Neon</div>
+    <div class="tag" data-v="warm earth tones organic">Naturel</div>
+    <div class="tag" data-v="metallic gold silver luxury">Metallic luxe</div>
+    <div class="tag" data-v="pastel dreamy soft">Pastel</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Kleurenpalet — dominante kleuren</div>
+  <div class="tags" id="palette-tags">
+    <div class="tag" data-v="cobalt blue and warm gold palette, rich cobalt blue and golden yellow as dominant colors, cream off-white as neutral base">Cobalt & Goud</div>
+    <div class="tag on" data-v="cobalt blue burnt orange and gold palette, electric blue and warm orange bold contrast, gold accents, cream base">Cobalt / Oranje / Goud</div>
+    <div class="tag" data-v="warm burnt orange sienna red and gold palette, no cool colors, warm terracotta and amber tones">Warm Oranje & Goud</div>
+    <div class="tag" data-v="Delft blue and orange Dutch palette, cobalt blue orange and cream, classic Dutch color combination">Delfts Blauw & Oranje</div>
+    <div class="tag" data-v="rich jewel tones, deep emerald sapphire ruby and gold, luxurious jewel color palette">Juwelen Tinten</div>
+    <div class="tag" data-v="earthy neutral palette, warm beige cream ochre and terracotta, natural material colors">Aarde Tinten</div>
+    <div class="tag" data-v="bold primary colors only, pure red blue yellow, Mondrian primary palette">Primaire Kleuren</div>
+    <div class="tag" data-v="black and gold luxury palette, deep black and warm gold as only colors">Zwart & Goud</div>
+    <div class="tag" data-v="nordic pale palette, pale blue grey white and soft gold, Scandinavian color restraint">Nordic Palet</div>
+  </div>
+  <div style="margin-top: 10px;">
+    <div class="label" style="margin-bottom: 6px;">Kleuren uitsluiten</div>
+    <div class="tags" id="no-color-tags">
+      <div class="tag on" data-v="avoid pure black, use deep navy or dark cobalt instead of black, no pure black zones">Geen zwart</div>
+      <div class="tag" data-v="avoid dark navy blue, keep blues bright and vivid not dark">Geen donker navy</div>
+      <div class="tag on" data-v="avoid gray tones, replace gray with warm cream or light cobalt">Geen grijs</div>
+      <div class="tag" data-v="avoid brown muddy colors">Geen bruin</div>
+      <div class="tag" data-v="avoid neon colors, keep palette warm and classical not electric">Geen neon</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Opgebouwd uit — gezicht/beeld bestaat uit deze elementen</div>
+  <div class="tags" id="composed-tags">
+    <div class="tag" data-v="Chuck Close grid portrait technique, face divided into thousands of small square grid cells, each cell filled with abstract organic shapes circles diamonds droplets in mixed colors, optical color mixing no palette blending, low-res pixel-like up close but realistic portrait from distance, analogue pixel art grid system, maximalist cell structure">Chuck Close Raster</div>
+    <div class="tag" data-v="face built entirely from circles and spheres of varying sizes, bubbles and orbs forming facial structure, geometric circular mosaic">Cirkels & bollen</div>
+    <div class="tag" data-v="face constructed from cow hide patches, black and white animal skin fragments assembled into portrait, patchwork of organic skin textures">Koeienhuid</div>
+    <div class="tag" data-v="face made entirely of butterflies, wings forming facial features, hundreds of colorful butterfly wings assembled into portrait mosaic">Vlinders</div>
+    <div class="tag" data-v="face composed of tropical flowers and petals, botanical blooms forming facial structure, floral mosaic portrait">Bloemen & botanisch</div>
+    <div class="tag" data-v="face built from ceramic tiles and mosaic fragments, Byzantine tile pieces assembled into portrait, ancient mosaic technique">Tegels & mozaïek</div>
+    <div class="tag" data-v="face constructed from coins and metal discs of various sizes, gold silver bronze coins forming facial features, numismatic mosaic">Munten & metaal</div>
+    <div class="tag" data-v="face made entirely of fingerprints, swirling fingerprint patterns forming facial structure, biometric mosaic portrait">Vingerafdrukken</div>
+    <div class="tag" data-v="face composed of letters, numbers and typography, text forming facial features, typographic portrait mosaic">Letters & cijfers</div>
+    <div class="tag" data-v="face built from snake scales, reptile skin fragments forming portrait, iridescent scale mosaic">Slangenhuid</div>
+    <div class="tag" data-v="face constructed from playing cards, tarot cards and game cards assembled into portrait mosaic">Speelkaarten</div>
+    <div class="tag" data-v="face made of broken mirror fragments and glass shards, reflective pieces forming portrait, shattered mirror mosaic">Gebroken spiegels</div>
+    <div class="tag" data-v="face built from postage stamps from around the world, philatelic mosaic portrait, stamps forming facial features">Postzegels</div>
+    <div class="tag" data-v="face composed of eyes, hundreds of different eyes forming the facial structure, eye mosaic portrait">Ogen</div>
+    <div class="tag" data-v="face constructed from fruit slices, cross-sections of citrus kiwi and tropical fruits assembled into portrait">Fruit plakjes</div>
+    <div class="tag" data-v="face made entirely of geometric crystals and gemstones, faceted precious stones forming portrait mosaic">Kristallen & edelstenen</div>
+  </div>
+</div>
+
+<div class="section">
+    <div class="col">
+      <div class="label">Complexiteit</div>
+      <select id="complexity">
+        <option value="simple bold iconic minimal">Eenvoudig & krachtig</option>
+        <option value="layered complex highly detailed" selected>Gelaagd & complex</option>
+        <option value="extremely intricate maximalist overwhelming detail">Maximalistisch chaos</option>
+      </select>
+    </div>
+    <div class="col">
+      <div class="label">Verhouding</div>
+      <select id="ratio">
+        <option value="--ar 1:1">Vierkant 1:1</option>
+        <option value="--ar 2:1">Liggend 2:1</option>
+        <option value="--ar 3:2">Liggend 3:2</option>
+        <option value="--ar 16:9">Liggend 16:9</option>
+        <option value="--ar 3:4" selected>Staand 3:4</option>
+        <option value="--ar 2:3">Portret 2:3</option>
+      </select>
+    </div>
+    <div class="col">
+      <div class="label">Versie</div>
+      <select id="version">
+        <option value="--v 8.2" selected>V8.2 (nieuwste)</option>
+        <option value="--v 8.1">V8.1</option>
+        <option value="--v 7">V7 (artistieker)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Abstract Kunstwerk — pure compositie zonder figuren</div>
+  <div class="tags" id="abstract-tags">
+    <div class="tag" data-v="pure gradient color field artwork, smooth flowing color transitions, color wash painting, no figures no objects, pure color experience">Gradient kleurveld</div>
+    <div class="tag" data-v="hard edge geometric shapes composition, bold rectangles circles triangles in flat color fields, color field painting, Mark Rothko meets Ellsworth Kelly, pure abstract geometry">Geometrische vormen</div>
+    <div class="tag" data-v="mosaic tile composition, thousands of colored tiles forming abstract pattern, Byzantine mosaic aesthetic, bold color contrasts in tile grid, pure abstract mosaic artwork">Mozaïek compositie</div>
+    <div class="tag" data-v="organic fluid abstract shapes, flowing biomorphic forms, soft curved abstract composition, Joan Miro inspired, natural organic abstraction no figures">Organische vormen</div>
+    <div class="tag" data-v="bold flat color block composition, hard edge color fields meeting at sharp boundaries, minimal color field painting, pure flat color zones, no gradients no texture">Kleurvlakken</div>
+    <div class="tag" data-v="dynamic diagonal composition, bold diagonal lines and shapes cutting across canvas, energetic angular abstract art, dynamic tension through diagonal geometry">Diagonale compositie</div>
+    <div class="tag" data-v="concentric circles and rings expanding from center, spiral and ring based abstract composition, target composition, pure circular abstraction, Kenneth Noland inspired">Concentrische vormen</div>
+    <div class="tag" data-v="explosion composition radiating outward from central point, burst of color and form from center, radial abstract composition, energy explosion in color">Explosie compositie</div>
+    <div class="tag" data-v="abstract drip and pour painting, fluid acrylic pour art, organic liquid color flows and drips, Jackson Pollock inspired chaos, pure gesture and flow">Drip & Pour</div>
+    <div class="tag" data-v="dense maximalist pattern composition, ornamental abstract surface, all-over pattern with no focal point, decorative abstract tapestry, complex surface texture">Maximaal Patroon</div>
+    <div class="tag" data-v="minimal abstract composition, vast empty space with single or few elements, zen minimalism, breathing room in abstract space, subtle color relationships">Minimaal Abstract</div>
+    <div class="tag" data-v="collage abstract composition, layered torn paper fragments, overlapping geometric and organic pieces, mixed media collage aesthetic, Schwitters inspired">Abstract Collage</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Historische laag — antieke elementen die doorheen schemeren</div>
+  <div class="tags" id="historical-tags">
+    <div class="tag" data-v="classical Roman Greek architectural engravings bleeding through composition, antique copperplate etching of columns pilasters and capitals as transparent layer, old master engraving texture underneath modern color fields">Romeinse pilaren & architectuur</div>
+    <div class="tag" data-v="vintage botanical engraving illustration bleeding through, 17th century herbarium scientific illustration as transparent layer underneath composition, antique hand-drawn botanical etching">Antieke botanische gravure</div>
+    <div class="tag" data-v="old master oil painting fragment bleeding through composition, Renaissance painting texture as translucent underlay, museum painting showing through modern graphic design">Renaissance schilderij fragment</div>
+    <div class="tag" data-v="vintage world map cartography engraving bleeding through, antique compass rose and geographic illustration as transparent layer, old navigation chart texture">Antieke wereldkaart</div>
+    <div class="tag" data-v="medieval illuminated manuscript patterns bleeding through, gold leaf ornament and gothic lettering as transparent historical layer underneath modern composition">Middeleeuws manuscript</div>
+    <div class="tag" data-v="antique Japanese woodblock print bleeding through as transparent layer, ukiyo-e engraving texture underneath modern composition, vintage Japanese illustration as underlay">Japanse houtdruk laag</div>
+    <div class="tag" data-v="vintage anatomical engraving bleeding through, Leonardo da Vinci style anatomical drawing as transparent layer, antique scientific illustration texture">Anatomische tekening</div>
+    <div class="tag" data-v="baroque ornamental engraving bleeding through, scrollwork flourishes and decorative baroque cartouche as transparent historical underlay">Barok ornament</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Extra richting (optioneel)</div>
+  <input type="text" id="extra-input" placeholder="Bijv: focus op de ogen, gebruik alleen blauw en goud, meer abstractie..." style="width:100%; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border2); border-radius: 2px; color: var(--text); font-size: 13px; font-family: var(--font-display);" />
+</div>
+
+<div class="section">
+  <div class="label">Negatieve prompt — wat wil je NIET zien</div>
+  <div class="tags" id="neg-tags">
+    <div class="tag on" data-v="no visible skin">Geen huid zichtbaar</div>
+    <div class="tag on" data-v="no studio lighting">Geen studio licht</div>
+    <div class="tag on" data-v="no photography">Geen fotografie</div>
+    <div class="tag on" data-v="no gray background">Geen grijze achtergrond</div>
+    <div class="tag" data-v="no shadow">Geen schaduwen</div>
+    <div class="tag" data-v="no text">Geen tekst</div>
+    <div class="tag" data-v="no hands">Geen handen</div>
+    <div class="tag" data-v="no body only face">Geen lichaam alleen gezicht</div>
+    <div class="tag" data-v="no jewelry">Geen sieraden</div>
+    <div class="tag" data-v="no clothing">Geen kleding</div>
+    <div class="tag" data-v="no realism">Geen realisme</div>
+    <div class="tag" data-v="no gradients">Geen kleurovergangen</div>
+  </div>
+  <div style="margin-top: 10px;">
+    <div class="label" style="margin-bottom: 6px;">Vrij uitsluiten — typ wat je deze sessie niet wil</div>
+    <input type="text" id="exclude-input" placeholder="Bijv: no insects, no dragonflies, no bees, no animals..." style="width:100%; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border2); border-radius: 2px; color: var(--text); font-size: 13px; font-family: var(--font-display);" />
+  </div>
+</div>
+
+<div class="section">
+  <div class="row">
+    <div class="col">
+      <div class="label">Seed (optioneel — voor consistentie)</div>
+      <input type="number" id="seed-input" placeholder="Bijv: 482910573" style="width:100%; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border2); border-radius: 2px; color: var(--text); font-size: 13px; font-family: var(--font-mono);" />
+    </div>
+    <div class="col">
+      <div class="label">Style Reference URL (--sref)</div>
+      <input type="text" id="sref-input" placeholder="Plak Midjourney beeld URL hier..." style="width:100%; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border2); border-radius: 2px; color: var(--text); font-size: 13px; font-family: var(--font-mono);" />
+    </div>
+  </div>
+</div>
+
+<button class="gen-btn" id="gen-btn" onclick="generate()">Genereer 4 prompts</button>
+
+<div class="results" id="results"></div>
+
+<button class="evolve-btn" id="evolve-btn" onclick="evolve()" disabled>
+  Evolueer op basis van favorieten <span class="liked-count" id="liked-count"></span>
+</button>
+
+<script>
+let liked = [];
+let allPrompts = [];
+let iterCount = 0;
+let currentMode = 'face';
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-face').classList.toggle('active', mode === 'face');
+  document.getElementById('btn-noface').classList.toggle('active', mode === 'noface');
+  const tags = document.querySelectorAll('#style-tags .tag');
+  tags.forEach(tag => {
+    const isFace = tag.dataset.face === 'yes';
+    if (mode === 'face') {
+      tag.style.display = '';
+    } else {
+      if (isFace) {
+        tag.classList.remove('on');
+        tag.style.display = 'none';
+      } else {
+        tag.style.display = '';
+      }
+    }
+  });
+}
+
+function saveKey() {
+  const val = document.getElementById("apikey-input").value.trim();
+  if (!val.startsWith("sk-ant-")) {
+    document.getElementById("apikey-status").textContent = "Ongeldige key — moet beginnen met sk-ant-";
+    return;
+  }
+  localStorage.setItem("pr_apikey", val);
+  document.getElementById("apikey-status").textContent = "Key opgeslagen!";
+  document.getElementById("apikey-input").value = "sk-ant-****************";
+}
+
+function getKey() {
+  return localStorage.getItem("pr_apikey") || "";
+}
+
+window.addEventListener("load", () => {
+  const saved = localStorage.getItem("pr_apikey");
+  if (saved) {
+    document.getElementById("apikey-input").value = "sk-ant-****************";
+    document.getElementById("apikey-status").textContent = "API key geladen.";
+  }
+});
+
+document.querySelectorAll('.tag').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('on'));
+});
+
+function getVals(id) {
+  return [...document.querySelectorAll(`#${id} .tag.on`)].map(t => t.dataset.v);
+}
+
+async function callClaude(userMsg) {
+  const key = getKey();
+  if (!key) throw new Error("Geen API key ingevuld.");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2000,
+      system: `You are a Midjourney prompt specialist for Paul Raats, a high-end mixed-media visual artist from Eindhoven.
+
+PROMPT STRUCTURE — ALWAYS START WITH ONE OF THESE OPENINGS:
+- For abstract/no-face work: "pure abstract composition of..." or "autonomous artwork of..." or "pure color field composition of..."
+- For portrait work: "silkscreen print of woman's face as graphic stencil..." or "flat poster art of female portrait..."
+
+GOLDEN EXAMPLE — the prompt style that works best for Paul:
+"pure abstract composition of Delft blue porcelain pattern, hand-painted Dutch tile ornament, cobalt blue geometric layering with translucent color zones, 17th century Golden Age meets contemporary pop art, bold flat color blocks in saturated blues oranges golds meeting at sharp hard edges, fine line illustration weaving windmill motifs and botanical florals, dual tone screenprint aesthetic, 2D vector art with solid colors and high contrast, minimal color field painting structure"
+
+KEY TERMS TO ALWAYS INCLUDE:
+- pure abstract composition / autonomous artwork
+- translucent color zones
+- bold flat color blocks meeting at sharp hard edges
+- dual tone screenprint aesthetic
+- 2D vector art with solid colors and high contrast
+- minimal color field painting structure
+- saturated blues oranges golds (never gray, never black zones)
+
+ARTISTIC REFERENCES — only when relevant:
+Roy Lichtenstein, Basquiat, Gustav Klimt, Banksy, Shepard Fairey, Matisse cutouts
+
+FORBIDDEN: lighting, shadows, depth, atmosphere, glow, halftone, grain, raster dots, gray backgrounds, dark zones, photorealistic
+
+SUBJECT RULES (face mode only):
+- Woman's face = flat graphic stencil, NOT a photograph
+- Face fully covered — zero gray or white skin
+- Bold flat color fills: cobalt, orange, gold, red — NEVER gray
+
+The exact end parameters will be in the user message — copy them EXACTLY at the end of each prompt.
+
+IMPORTANT: Keep each prompt under 250 characters before the parameters.
+
+Return ONLY a valid JSON array of 4 strings. No markdown, no backticks, no explanation. Just the raw JSON array.`,
+      messages: [{ role: "user", content: userMsg }]
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`API fout ${res.status}: ${data.error?.message || JSON.stringify(data)}`);
+  if (!data.content) throw new Error(`Onverwacht antwoord: ${JSON.stringify(data)}`);
+  const raw = data.content.map(b => b.text || "").join("").replace(/```json|```/g, "").trim();
+  const start = raw.indexOf('[');
+  const end = raw.lastIndexOf(']');
+  if (start === -1 || end === -1) throw new Error(`Antwoord: ${raw.substring(0, 200)}`);
+  return JSON.parse(raw.slice(start, end + 1));
+}
+
+function buildMsg(extra = "") {
+  const styles = getVals("style-tags").join(", ") || "abstract";
+  const moods = getVals("mood-tags").join(", ") || "bold";
+  const composed = getVals("composed-tags");
+  const abstractTags = getVals("abstract-tags");
+  const abstractModeStr = abstractTags.length > 0 ? `ABSTRACT MODE: Generate pure abstract artworks only — zero figures, zero faces, zero objects. Pure color, form, pattern and composition as standalone artwork.` : "";
+  const abstractStr = abstractTags.length > 0 ? `ABSTRACT ARTWORK DIRECTION: ${abstractTags.join(" COMBINED WITH ")}` : "";
+  const composedStr = composed.length > 0 ? `COMPOSED OF: The image must be physically constructed from: ${composed.join(" AND ")}` : "";
+  const historicalTags = getVals("historical-tags");
+  const historicalStr = historicalTags.length > 0 ? `HISTORICAL LAYER: Integrate these antique elements as transparent layers bleeding through the composition: ${historicalTags.join(" AND ")}` : "";
+  const paletteTags = getVals("palette-tags");
+  const noColorTags = getVals("no-color-tags");
+  const paletteStr = paletteTags.length > 0 ? `COLOR PALETTE: Use this specific color palette: ${paletteTags.join(" AND ")}` : "";
+  const noColorStr = noColorTags.length > 0 ? `COLOR RESTRICTIONS: ${noColorTags.join(", ")}` : "";
+  const complexity = document.getElementById("complexity").value;
+  const ratio = document.getElementById("ratio").value;
+  const negatives = getVals("neg-tags");
+  const extraInput = document.getElementById("extra-input").value.trim();
+  const excludeInput = document.getElementById("exclude-input").value.trim();
+  const allNegatives = [...negatives];
+  if (excludeInput) allNegatives.push(excludeInput);
+  const negStr = allNegatives.length > 0 ? `Strictly avoid in the image: ${allNegatives.join(", ")}` : "";
+  const version = document.getElementById("version").value;
+  const isV7 = version === "--v 7";
+  const seedInput = document.getElementById("seed-input").value.trim();
+  const srefInput = document.getElementById("sref-input").value.trim();
+  const seedParam = seedInput ? `--seed ${seedInput}` : "";
+  const srefParam = srefInput ? `--sref ${srefInput}` : "";
+  const endParams = `--s 1000 ${version} ${seedParam} ${srefParam}`.trim();
+  const noFaceInstruction = currentMode === 'noface' ? `
+ABSOLUTE RULE — NO FACE MODE IS ACTIVE:
+- Describe ONLY what IS in the image — pure abstract pattern, geometric ornament, botanical forms, landscape, architecture
+- NEVER mention any human body part, face, or figure — not even to negate it
+- Frame every prompt as: "pure abstract composition of...", "autonomous pattern artwork...", "geometric ornament as standalone art..."
+- The subject IS the pattern/geometry/nature — there is no human subject
+` : `
+FACE BLENDING RULE — FACE MODE IS ACTIVE:
+- Patterns must be deeply fused INTO the face — use: "pattern grows organically from skin", "tattoo-like seamless integration", "skin and pattern are one unified surface"
+- Never describe pattern as overlay, layer, or floating on top
+`;
+  return `Create 4 unique Midjourney prompts with:
+${noFaceInstruction}
+${abstractModeStr}
+Style: ${styles}
+Mood/color: ${moods}
+${paletteStr}
+${noColorStr}
+${composedStr}
+${abstractStr}
+${historicalStr}
+Complexity: ${complexity}
+Aspect ratio: ${ratio}
+${extraInput ? `Extra direction: ${extraInput}` : ""}
+${extra}
+CRITICAL: Every prompt must use 2D flat language only: flat design, 2D vector art, solid smooth colors, clean color fields, poster print smooth.
+NEVER use: lighting, shadows, depth, atmosphere, glow, soft, realistic, gray backgrounds, dark zones.
+FORBIDDEN TEXTURE TERMS — never use these as they create grain and dots: halftone, riso grain, risograph texture, woodcut grain, linocut texture, screen print grain, stippling, raster dots, ink grain, paper texture, canvas texture. 
+COLOR MUST BE: clean smooth flat solid fields — cobalt blue should be clean solid blue, orange should be clean solid orange, no grain no dots no texture within color areas.
+Every prompt must end with exactly: ${endParams}
+Make each prompt distinct. Be daring and reference real artistic movements.`;
+}
+
+function setAbstract() {
+  const btn = document.getElementById('btn-abstract');
+  const isActive = btn.classList.contains('active');
+  btn.classList.toggle('active', !isActive);
+  btn.textContent = !isActive ? '🎨 Abstract modus aan' : '🎨 Activeer abstract modus';
+}
+
+function getSettings() {
+  const styles = getVals("style-tags");
+  const moods = getVals("mood-tags");
+  const composed = getVals("composed-tags");
+  const abstractTags = getVals("abstract-tags");
+  const historicalTags = getVals("historical-tags");
+  const paletteTags = getVals("palette-tags");
+  const noColorTags = getVals("no-color-tags");
+  const negatives = getVals("neg-tags");
+  const complexEl = document.getElementById("complexity");
+  const ratioEl = document.getElementById("ratio");
+  const complexLabel = complexEl.options[complexEl.selectedIndex].text;
+  const ratioLabel = ratioEl.options[ratioEl.selectedIndex].text;
+  const extraInput = document.getElementById("extra-input").value.trim();
+  const excludeInput = document.getElementById("exclude-input").value.trim();
+  const versionEl = document.getElementById("version");
+  const versionLabel = versionEl.options[versionEl.selectedIndex].text;
+  return { styles, moods, composed, abstractTags, historicalTags, paletteTags, noColorTags, complexLabel, ratioLabel, negatives, extraInput, excludeInput, versionLabel };
+}
+
+function renderSet(prompts, label, settings) {
+  const out = document.getElementById("results");
+  const block = document.createElement("div");
+  const lbl = document.createElement("div");
+  lbl.className = "iter-label";
+  lbl.textContent = label;
+  block.appendChild(lbl);
+
+  if (settings) {
+    const snap = document.createElement("div");
+    snap.className = "settings-snap";
+    snap.innerHTML = `
+      <div class="snap-row"><span class="snap-key">Stijl</span><span class="snap-val">${settings.styles.join(", ") || "—"}</span></div>
+      <div class="snap-row"><span class="snap-key">Sfeer</span><span class="snap-val">${settings.moods.join(", ") || "—"}</span></div>
+      ${settings.composed && settings.composed.length > 0 ? `<div class="snap-row"><span class="snap-key">Opgebouwd uit</span><span class="snap-val">${settings.composed.map(c => c.split(',')[0]).join(" + ")}</span></div>` : ""}
+      ${settings.abstractTags && settings.abstractTags.length > 0 ? `<div class="snap-row"><span class="snap-key">Abstract</span><span class="snap-val">${settings.abstractTags.map(a => a.split(',')[0]).join(" + ")}</span></div>` : ""}
+      ${settings.historicalTags && settings.historicalTags.length > 0 ? `<div class="snap-row"><span class="snap-key">Historische laag</span><span class="snap-val">${settings.historicalTags.map(h => h.split(',')[0]).join(" + ")}</span></div>` : ""}
+      ${settings.paletteTags && settings.paletteTags.length > 0 ? `<div class="snap-row"><span class="snap-key">Palet</span><span class="snap-val">${settings.paletteTags.map(p => p.split(',')[0]).join(" + ")}</span></div>` : ""}
+      ${settings.noColorTags && settings.noColorTags.length > 0 ? `<div class="snap-row"><span class="snap-key">Geen kleur</span><span class="snap-val">${settings.noColorTags.map(c => c.split(',')[0]).join(" + ")}</span></div>` : ""}
+      <div class="snap-row"><span class="snap-key">Complexiteit</span><span class="snap-val">${settings.complexLabel}</span></div>
+      <div class="snap-row"><span class="snap-key">Verhouding</span><span class="snap-val">${settings.ratioLabel}</span></div>
+      ${settings.negatives && settings.negatives.length > 0 ? `<div class="snap-row"><span class="snap-key">Niet</span><span class="snap-val">${settings.negatives.join(", ")}</span></div>` : ""}
+      ${settings.extraInput ? `<div class="snap-row"><span class="snap-key">Extra</span><span class="snap-val">${settings.extraInput}</span></div>` : ""}
+      ${settings.excludeInput ? `<div class="snap-row"><span class="snap-key">Uitsluit</span><span class="snap-val">${settings.excludeInput}</span></div>` : ""}
+      ${settings.versionLabel ? `<div class="snap-row"><span class="snap-key">Versie</span><span class="snap-val">${settings.versionLabel}</span></div>` : ""}`;
+    block.appendChild(snap);
+  }
+  prompts.forEach((p, i) => {
+    const id = `pr_${Date.now()}_${i}`;
+    allPrompts.push({ id, text: p });
+    const card = document.createElement("div");
+    card.className = "prompt-card";
+    card.id = id;
+    card.innerHTML = `
+      <div class="prompt-text">${p}</div>
+      <div class="card-actions">
+        <button class="btn-sm btn-like" id="l_${id}" onclick="toggleLike('${id}')">Favoriet</button>
+        <button class="btn-sm" onclick="copyIt('${id}')">Kopieer</button>
+      </div>`;
+    block.appendChild(card);
+  });
+  out.appendChild(block);
+  updateEvolve();
+}
+
+function toggleLike(id) {
+  const card = document.getElementById(id);
+  const btn = document.getElementById(`l_${id}`);
+  const p = allPrompts.find(x => x.id === id);
+  if (!p) return;
+  if (liked.find(x => x.id === id)) {
+    liked = liked.filter(x => x.id !== id);
+    card.classList.remove("liked");
+    btn.classList.remove("on");
+    btn.textContent = "Favoriet";
+  } else {
+    liked.push(p);
+    card.classList.add("liked");
+    btn.classList.add("on");
+    btn.textContent = "Geliked";
+  }
+  updateEvolve();
+}
+
+function copyIt(id) {
+  const p = allPrompts.find(x => x.id === id);
+  if (!p) return;
+  navigator.clipboard.writeText(p.text);
+  const btn = document.querySelector(`#${id} .btn-sm:last-child`);
+  btn.textContent = "Gekopieerd!";
+  setTimeout(() => btn.textContent = "Kopieer", 1500);
+}
+
+function updateEvolve() {
+  const btn = document.getElementById("evolve-btn");
+  const cnt = document.getElementById("liked-count");
+  btn.disabled = liked.length === 0;
+  cnt.textContent = liked.length > 0 ? `(${liked.length})` : "";
+}
+
+async function generate() {
+  const btn = document.getElementById("gen-btn");
+  btn.disabled = true;
+  btn.textContent = "Genereren...";
+  iterCount++;
+  const out = document.getElementById("results");
+  if (iterCount === 1) out.innerHTML = "";
+  const status = document.createElement("div");
+  status.className = "status";
+  status.innerHTML = `<span class="dots">Claude genereert</span>`;
+  out.appendChild(status);
+  try {
+    const prompts = await callClaude(buildMsg());
+    status.remove();
+    renderSet(prompts, `Generatie ${iterCount}`, getSettings());
+  } catch(e) {
+    status.textContent = "Fout: " + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = "Genereer 4 nieuwe prompts";
+}
+
+async function evolve() {
+  const btn = document.getElementById("evolve-btn");
+  btn.disabled = true;
+  btn.textContent = "Evolueert...";
+  iterCount++;
+  const likedTexts = liked.map(l => l.text).join("\n---\n");
+  const extra = `\nThe artist loved these prompts. Evolve them further — push the concept deeper, more surprising, more original:\n${likedTexts}`;
+  const out = document.getElementById("results");
+  const status = document.createElement("div");
+  status.className = "status";
+  status.innerHTML = `<span class="dots">Evolueert op basis van ${liked.length} favoriet${liked.length > 1 ? "en" : ""}</span>`;
+  out.appendChild(status);
+  try {
+    const prompts = await callClaude(buildMsg(extra));
+    status.remove();
+    renderSet(prompts, `Evolutie ${iterCount} — gebaseerd op ${liked.length} favoriet${liked.length > 1 ? "en" : ""}`, getSettings());
+  } catch(e) {
+    status.textContent = "Fout: " + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = `Evolueer verder`;
+  updateEvolve();
+}
+</script>
+</body>
+</html>
